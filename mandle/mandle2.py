@@ -4,9 +4,11 @@ import threading, os, webbrowser
 import xml.etree.ElementTree as ET
 import BaseHTTPServer
 import SimpleHTTPServer
+import Levenshtein
 
 PORT = 8080
 DIRE = "/home/pdevetto/Misc/TOKEY"
+DOMA = "http://localhost:%s/" % (PORT)
 
 def cleantext(t):
     m = t.encode("windows-1252", "ignore")
@@ -20,15 +22,19 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         """Handle a post request by returning the square of the number."""
         #length = int(self.headers.getheader('content-length'))
         #data_string = self.rfile.read(length)
-        print self.path[1:]
         if os.path.isfile(self.path[1:]):
             return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
-        self.content = "Hello World"
-        self.content += "<hr>"
-
         M = Movies()
-        self.content += M.getAll()
+
+        expl = self.path.split("/")
+        print expl
+        if expl[1] == "real":
+            self.content += M.getReal(expl[2])
+        elif expl[1] == "year":
+            self.content += M.getYear(expl[2])
+        else:
+            self.content += M.getAll()
 
         self.layout()
         return self.view()
@@ -36,10 +42,11 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def layout(self):
         layout = "<html><head>"
         layout += "   <title> Mandle </title>"
-        layout += "   <script type='text/javascript' src='core.js'></script>"
-        layout += "   <link rel='stylesheet' href='core.css' type='text/css' />"
+        layout += "   <script type='text/javascript' src='" + DOMA + "core.js'></script>"
+        layout += "   <link rel='stylesheet' href='" + DOMA + "core.css' type='text/css' />"
         layout += "</head><body>"
         layout += "<h1> Mandle </h1>"
+        layout += "<div id='menu'>  <a href='" + DOMA + "'> root </a> </div>"
         layout += self.content
         layout += "</body></html>"
         self.content = layout
@@ -52,6 +59,15 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.write(self.content)
         return
 
+def nospachar(t):
+    u = ""
+    for i in range(len(t)):
+        if 65 <= ord(t[i]) <= 90 or 97 <= ord(t[i]) <= 122:
+            u += t[i].lower()
+        elif t[i] in [" ", ".", ",", "-", "_", "/"]:
+            u += "_"
+    return u
+
 class Movies:
     content = ""
     def parcourir(self):
@@ -63,18 +79,53 @@ class Movies:
 
     def getAll(self):
         self.content = ""
+        i = 0
         for mov in self.parcourir():
             inf = self.nfoparse(mov)
-            print inf
-            self.content += "<div class='movie' id='" + str(inf["id"]) + "'>" + "\r\n"
-            self.content += "  <img src='" + inf["img"] + "'/>" + "\r\n"
-            self.content += "  <span class='title'>" + inf["title"] + "</span><br>" + "\r\n"
-            if "director" in inf:
-                self.content += "  <span class='real'>" + ",".join(inf["director"]) + "</span>" + "\r\n"
-            self.content += "<span class='year'>(" + str(inf["year"]) + ")</span>" + "\r\n"
-            self.content += "</div>" + "\r\n"
-            #self.content += show(mov)
+            self.content += self.show(inf)
+            i += 1
+            if i == 50:
+                return self.content
         return self.content
+
+    def getYear(self, year):
+        self.content = ""
+        for mov in self.parcourir():
+            inf = self.nfoparse(mov)
+            if inf["year"] == year:
+                self.content += self.show(inf)
+
+        return "<h2> Year : " + year + " </h2> " + self.content
+
+    def getReal(self, real):
+        self.content = ""
+        self.simi = ""
+        for mov in self.parcourir():
+            inf = self.nfoparse(mov)
+
+            for di in inf["director"]:
+                if nospachar(di) == real:
+                    self.content += self.show(inf)
+                elif Levenshtein.distance(cleantext(nospachar(di)), cleantext(real)) < 5:
+                    self.simi += " LEV " + cleantext(nospachar(di)) + " - " + cleantext(real) + " = " + Levenshtein.distance(cleantext(nospachar(di)), cleantext(real))
+                    self.simi += self.show(inf)
+                else:
+                    pass
+
+        return "<h2> Real : " + real + " </h2> " + self.content + " <hr> <h2> Similaires </h2> " + self.simi
+
+    def show(self, inf):
+        content = "<div class='movie' id='" + str(inf["id"]) + "'>" + "\r\n"
+        content += "  <img src='" + inf["img"] + "'/>" + "\r\n"
+        content += "  <span class='title'>" + inf["title"] + "</span><br>" + "\r\n"
+        if "director" in inf:
+            dis = []
+            for sho, di in inf["director"].items():
+                dis.append("<a href='" + DOMA + "real/" + sho + "'>" + di + "</a>")
+            content += "  <span class='real'>" + ",".join(dis) + "</span>" + "\r\n"
+        content += "<span class='year'><a href='" + DOMA + "year/" + str(inf["year"]) + "'>(" + str(inf["year"]) + ")</a></span>" + "\r\n"
+        content += "</div>" + "\r\n"
+        return content
 
     def nfoparse(self, path):
         data = {}
@@ -92,13 +143,10 @@ class Movies:
         # DIrectores
         real = movielt.findall("director")
         if len(real) > 0 and real[0].text != None:
-            data["director"] = []
+            data["director"] = {}
             for r in real:
-                data["director"].append( r.text )
-        else:
-            print "PAS DE REAL POUR " + data["title"]
-        print " THUMB OF " + data["title"]
-
+                sho = nospachar(r.text)
+                data["director"][sho] = r.text
         # Image du film
         th = movielt.findall("thumb")
         if len(th) > 0:
@@ -107,14 +155,10 @@ class Movies:
             data["img"] = "no.png"
         return data
 
-    def show(self, mov):
-        self.content = "<div class='movie'> mov </div>"
-        return content
-
 def open_browser():
     """Start a browser after waiting for half a second."""
     def _open_browser():
-        webbrowser.open('http://localhost:%s/' % (PORT))
+        webbrowser.open(DOMA)
     thread = threading.Timer(0.5, _open_browser)
     thread.start()
 

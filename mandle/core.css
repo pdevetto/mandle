@@ -16,7 +16,7 @@ h1{
    margin:10px;
 }
 .movie img{
-   height: 250px;
+   width: 200px;
    display: block;
 }
 .movie span{
