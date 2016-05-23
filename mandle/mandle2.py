@@ -4,13 +4,14 @@ import threading, os, webbrowser
 import xml.etree.ElementTree as ET
 import BaseHTTPServer
 import SimpleHTTPServer
-import Levenshtein
+#import Levenshtein
 
 PORT = 8080
 DIRE = "/home/pdevetto/Misc/TOKEY"
+DIRE = "/drives/m/Films/"
 DOMA = "http://localhost:%s/" % (PORT)
 
-def cleantext(t):
+def cleantext(t): 
     m = t.encode("windows-1252", "ignore")
     m = m.decode("utf8", "ignore")
     return m
@@ -82,9 +83,10 @@ class Movies:
         i = 0
         for mov in self.parcourir():
             inf = self.nfoparse(mov)
-            self.content += self.show(inf)
-            i += 1
-            if i == 50:
+            if inf["year"] != None:
+                self.content += self.show(inf)
+                i += 1
+            if i == 100:
                 return self.content
         return self.content
 
@@ -101,18 +103,18 @@ class Movies:
         self.content = ""
         self.simi = ""
         for mov in self.parcourir():
+            print mov
             inf = self.nfoparse(mov)
-
-            for di in inf["director"]:
-                if nospachar(di) == real:
-                    self.content += self.show(inf)
-                elif Levenshtein.distance(cleantext(nospachar(di)), cleantext(real)) < 5:
-                    self.simi += " LEV " + cleantext(nospachar(di)) + " - " + cleantext(real) + " = " + Levenshtein.distance(cleantext(nospachar(di)), cleantext(real))
-                    self.simi += self.show(inf)
-                else:
-                    pass
-
-        return "<h2> Real : " + real + " </h2> " + self.content + " <hr> <h2> Similaires </h2> " + self.simi
+            if "director" in inf:
+                for di in inf["director"]:
+                    if nospachar(di) == real:
+                        self.content += self.show(inf)
+                    #elif Levenshtein.distance(cleantext(nospachar(di)), cleantext(real)) < 5:
+                    #    self.simi += " LEV " + cleantext(nospachar(di)) + " - " + cleantext(real) + " = " + Levenshtein.distance(cleantext(nospachar(di)), cleantext(real))
+                    #    self.simi += self.show(inf)
+                    else:
+                        pass
+        return "<h2> Real : " + real + " </h2> " + self.content # + " <hr> <h2> Similaires </h2> " + self.simi
 
     def show(self, inf):
         content = "<div class='movie' id='" + str(inf["id"]) + "'>" + "\r\n"
@@ -129,7 +131,11 @@ class Movies:
 
     def nfoparse(self, path):
         data = {}
-        tree = ET.parse(path)
+        try:
+            tree = ET.parse(path)
+        except ET.ParseError:
+            self.content += "ERROR ON PARSE" + path
+            return data
         root = tree.getroot()
 
         movielt = root
