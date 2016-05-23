@@ -1,0 +1,28 @@
+body{
+   padding: 40px;
+   font: "Lucida Console", Monaco, monospace;
+}
+
+h1{
+   background: url("logo.jpeg") 0px no-repeat;
+   padding-left: 80px;
+}
+
+.movie{
+   max-width: 200px;
+   display: inline-block;
+   vertical-align: top;
+   padding: 10px;
+   margin:10px;
+}
+.movie img{
+   height: 250px;
+   display: block;
+}
+.movie span{
+   font-size: 0.9em;
+}
+.movie span.real{
+   color: grey;
+   font-size: 0.9em;
+}
