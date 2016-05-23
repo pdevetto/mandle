@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <title> {{ title }} | mandle </title>
+        <link rel="shortcut icon" type="image/png" href="{{ DOMA }}favicon.png">
+        <script type='text/javascript' src='{{ DOMA }}core.js'></script>
+        <link rel='stylesheet' href='{{ DOMA }}core.css' type='text/css' />
+    </head>
+    <body>
+        <header>
+            <div id='menu'>
+                <div>
+                    <a href='{{ DOMA }}'> root </a>
+                </div>
+                
+                <div>
+                    <form method="GET" action="{{ DOMA }}search/all">
+                        <input type="text" name="s">
+                        <input type="submit">
+                    </form>
+                </div>
+            </div>
+            <h1> Mandle </h1>
+            
+        </header>
+        <div id="content">
+            {{ content }}
+        </div>
+    </body>
+</html>

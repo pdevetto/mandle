@@ -2,8 +2,8 @@
 
 import threading, os, webbrowser
 import xml.etree.ElementTree as ET
-import BaseHTTPServer
-import SimpleHTTPServer
+import BaseHTTPServer, SimpleHTTPServer, urlparse
+from jinja2 import Environment, FileSystemLoader
 #import Levenshtein
 
 PORT = 8080
@@ -18,7 +18,8 @@ def cleantext(t):
 
 class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     content = ""
-
+    title = "home"
+    
     def do_GET(self):
         """Handle a post request by returning the square of the number."""
         #length = int(self.headers.getheader('content-length'))
@@ -31,31 +32,29 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         expl = self.path.split("/")
         print expl
         if expl[1] == "real":
+            self.title = "real: " + expl[2]
             self.content += M.getReal(expl[2])
         elif expl[1] == "year":
+            self.title = expl[2]
             self.content += M.getYear(expl[2])
-        else:
+        elif expl[1] == "search":
+            parsed = urlparse.urlparse(self.path)
+            s = urlparse.parse_qs(parsed.query)['s']
+            self.title = "search:" + s[0]
+            self.content += M.search(s[0])
+        else:            
             self.content += M.getAll()
-
-        self.layout()
         return self.view()
-
-    def layout(self):
-        layout = "<html><head>"
-        layout += "   <title> Mandle </title>"
-        layout += "   <script type='text/javascript' src='" + DOMA + "core.js'></script>"
-        layout += "   <link rel='stylesheet' href='" + DOMA + "core.css' type='text/css' />"
-        layout += "</head><body>"
-        layout += "<h1> Mandle </h1>"
-        layout += "<div id='menu'>  <a href='" + DOMA + "'> root </a> </div>"
-        layout += self.content
-        layout += "</body></html>"
-        self.content = layout
 
     def view(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
+        
+        env = Environment(loader=FileSystemLoader('%s' % os.path.dirname(__file__)))
+        template = env.get_template('index.htm')
+        self.content = template.render(DOMA=DOMA, content=self.content, title=self.title)
+        
         self.content = cleantext(self.content)
         self.wfile.write(self.content)
         return
@@ -86,10 +85,22 @@ class Movies:
             if inf["year"] != None:
                 self.content += self.show(inf)
                 i += 1
-            if i == 100:
+            if i == 50:
                 return self.content
         return self.content
 
+    def search(self, sst):
+        self.content = ""
+        i = 0
+        for mov in self.parcourir():
+            inf = self.nfoparse(mov)
+            if sst.lower() in inf["title"].lower():
+                self.content += self.show(inf)
+                i += 1
+            if i == 50:    
+                return self.content
+        return "<h2> Search : " + sst + " </h2> " + self.content
+        
     def getYear(self, year):
         self.content = ""
         for mov in self.parcourir():
@@ -158,7 +169,7 @@ class Movies:
         if len(th) > 0:
             data["img"] = th[0].text
         else:
-            data["img"] = "no.png"
+            data["img"] = DOMA + "no.png"
         return data
 
 def open_browser():

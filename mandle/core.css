@@ -1,13 +1,20 @@
 body{
-   padding: 40px;
-   font: "Lucida Console", Monaco, monospace;
+    font: "Lucida Console", Monaco, monospace;
+    margin:0px;
 }
+header{
+   padding: 20px 20px 20px 30px;
+   background: url("logo.png") #EFE8D5 30px 30px no-repeat;
+   background-size: 4em;
+}
+#content{
+    padding: 40px;
+}
+
 
 h1{
-   background: url("logo.jpeg") 0px no-repeat;
    padding-left: 80px;
 }
-
 .movie{
    max-width: 200px;
    display: inline-block;
@@ -17,6 +24,7 @@ h1{
 }
 .movie img{
    width: 200px;
+   height:284px;
    display: block;
 }
 .movie span{
@@ -25,4 +33,14 @@ h1{
 .movie span.real{
    color: grey;
    font-size: 0.9em;
+}
+
+#menu{
+    padding: 40px;
+    float: right;
+}
+
+#menu div{
+    display: inline-block;
+    margin: 0 0 0 10px;
 }
