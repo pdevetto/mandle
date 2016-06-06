@@ -2,16 +2,18 @@
     <head>
         <title> {{ title }} | mandle </title>
         <link rel="shortcut icon" type="image/png" href="{{ DOMA }}favicon.png">
-        <script type='text/javascript' src='{{ DOMA }}core.js'></script>
-        <link rel='stylesheet' href='{{ DOMA }}core.css' type='text/css' />
+        <script type='text/javascript' src='{{ DOMA }}static/core.js'></script>
+        <link rel='stylesheet' href='{{ DOMA }}static/core.css' type='text/css' />
     </head>
     <body>
         <header>
             <div id='menu'>
                 <div>
-                    <a href='{{ DOMA }}'> root </a>
+                   <a href='{{ DOMA }}'> home </a> &nbsp; &nbsp;
+                   <a href='{{ DOMA }}top250'> top250 </a> &nbsp; &nbsp;
+                   <a href='{{ DOMA }}random'> random </a>
                 </div>
-                
+
                 <div>
                     <form method="GET" action="{{ DOMA }}search/all">
                         <input type="text" name="s">
@@ -20,7 +22,7 @@
                 </div>
             </div>
             <h1> Mandle </h1>
-            
+
         </header>
         <div id="content">
             {{ content }}
