@@ -1,12 +1,7 @@
 import os,  ConfigParser, imp, time, random
 import xml.etree.ElementTree as ET
 import pidevs
-try:
-    imp.find_module('pymongo')
-    from pymongo import MongoClient
-    MONGO = True
-except ImportError:
-    MONGO = False
+from pymongo import MongoClient
 try:
     imp.find_module('Levenshtein')
     import Levenshtein
@@ -27,6 +22,13 @@ class Morage:
 
     def find(self, mid):
         return self.movies.find_one({"id": mid})
+    def getN(self):
+        return self.movies.count()
+    def rand(self):
+        tot = self.movies.count()
+        while 1:
+            r = random.randint(0,tot-1)
+            yield self.movies.find().limit(-1).skip( r ).next();
 
 class Movies:
     content = ""
@@ -49,6 +51,9 @@ class Movies:
                 if fe == ".nfo":
                     yield os.path.join(root, curfile)
 
+    def getNDB(self):
+        return self.MO.getN()
+
     """
     Return HTML for the 50 first movies
     """
@@ -60,39 +65,7 @@ class Movies:
             if inf["year"] != None:
                 self.content += self.show(inf)
                 i += 1
-            if i == 50:
-                return self.content
-        return self.content
-
-    """
-    Yield randomly through all the movies in the directory
-    """
-    def parcourand(self):
-        all = []
-        start = time.time()
-        for root, dirs, files in os.walk(self.modir):
-            for curfile in files:
-                fi, fe = os.path.splitext(curfile)
-                if fe == ".nfo":
-                    all += [os.path.join(root, curfile)]
-        end = time.time()
-        print end - start, " seconds"
-        random.shuffle(all)
-        for i in all:
-            yield i
-
-    """
-    Return HTML for 50 randomly choosed movies
-    """
-    def getRand(self):
-        self.content = ""
-        i = 0
-        for mov in self.parcourand():
-            inf = self.nfoparse(mov)
-            if inf["year"] != None:
-                self.content += self.show(inf)
-                i += 1
-            if i == 50:
+            if i == 20:
                 return self.content
         return self.content
 
@@ -123,6 +96,40 @@ class Movies:
 
         return "<h2> Year : " + year + " </h2> " + self.content
 
+
+    """
+    Yield randomly through all the movies in the directory
+    """
+    def parcourand(self):
+        all = []
+        start = time.time()
+        for root, dirs, files in os.walk(self.modir):
+            for curfile in files:
+                fi, fe = os.path.splitext(curfile)
+                if fe == ".nfo":
+                    all += [os.path.join(root, curfile)]
+        end = time.time()
+        print end - start, " seconds"
+        random.shuffle(all)
+        for i in all:
+            yield i
+
+    """
+    Return HTML for 50 randomly choosed movies
+    """
+    def getRand(self):
+        self.content = ""
+        i = 0
+        for mov in self.parcourand():
+            print i
+            inf = self.nfoparse(mov)
+            if inf["year"] != None:
+                self.content += self.show(inf)
+                i += 1
+            if i == 20:
+                return self.content
+        return self.content
+
     """
     Movie info, by id
     """
@@ -142,6 +149,17 @@ class Movies:
             return self.content
 
         return "-- nothing found --"
+
+    """ Parcourir mongodb randomly """
+    def getMorand(self):
+        self.content = ""
+        i = 0
+        for mov in self.MO.rand():
+            self.content += self.show(mov)
+            i += 1
+            if i == 30:
+                return self.content
+
     """
     By real
     """

@@ -25,6 +25,9 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         M = Movies(DOMA, DIRE)
 
+        self.ndbmovies = M.getNDB()
+        print self.ndbmovies, "movies"
+
         expl = self.path.split("/")
         if expl[1] == "real":
             self.title = "real: " + expl[2]
@@ -37,6 +40,9 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         elif expl[1] == "random":
             self.title = "Random"
             self.content += M.getRand()
+        elif expl[1] == "morand":
+            self.title = "Random (quick)"
+            self.content += M.getMorand()
         elif expl[1] == "search":
             parsed = urlparse.urlparse(self.path)
             s = urlparse.parse_qs(parsed.query)['s']
@@ -61,7 +67,8 @@ class TestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         env = Environment(loader=FileSystemLoader('%s' % os.path.dirname(__file__)))
         template = env.get_template('html/index.htm')
-        self.content = template.render(DOMA=DOMA, content=self.content, title=self.title)
+        self.content = template.render(DOMA=DOMA, content=self.content,
+                                        title=self.title, ndbmv=self.ndbmovies)
         self.content = pidevs.cleantext(self.content)
         self.wfile.write(self.content)
         return

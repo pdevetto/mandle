@@ -22,6 +22,8 @@ def cc(i):
     return decode(clean(remove_accents(i)))
 def nospachar(t):
     u = ""
+    if t is None:
+        return ""
     for i in range(len(t)):
         if 65 <= ord(t[i]) <= 90 or 97 <= ord(t[i]) <= 122:
             u += t[i].lower()

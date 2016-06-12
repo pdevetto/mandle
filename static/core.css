@@ -36,8 +36,13 @@ h1{
 }
 
 #menu{
-    padding: 40px;
+    padding: 20px 40px;
     float: right;
+    text-align: center;
+}
+
+#menu .nav{
+  text-align: center;
 }
 
 #menu div{
